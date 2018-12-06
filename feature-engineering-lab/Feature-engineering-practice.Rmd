@@ -1,0 +1,80 @@
+---
+title: "Feature Engineering - R"
+output:
+  html_document:
+    df_print: paged
+---
+
+Clear workspace and set current work directory
+
+```{r}
+rm(list = ls(all=TRUE))
+setwd("C:\\Users\\samanoh.FAREAST\\besantr\\feature-engineering-lab")
+```
+
+Import Toyota regression file
+```{r}
+data = read.csv("Simple_Linear_Reg.csv", header = TRUE)
+summary(data)
+```
+
+Getting structure of data
+```{r}
+str(data)
+max(data$Price)
+min(data$Price)
+```
+
+## Transformation
+
+Log transformed data
+```{r}
+log_data = log(data)
+max(log_data$Price)
+min(log_data$Price)
+```
+
+
+## Standardization
+
+Install packages - vegan
+```{r}
+#install.packages("vegan")
+library("vegan")
+```
+
+Standardization using Range
+```{r}
+range_std = decostand(data,method = "range")
+max(range_std$Price)
+min(range_std$Price)
+```
+
+Standardization using Standard Deviation
+```{r}
+sd_std = decostand(data, method = "standardize")
+max(sd_std$Price)
+min(sd_std$Price)
+```
+
+Declare two vectors height and weight and combine them to form a dataframe
+Note: In case two vectors are not equal length, shortest vector values repeats
+```{r}
+height = c(145,163,172,183,191)
+weight = c(56000,67500,73845,97345,100000)
+data1 = cbind(height, weight)
+```
+
+Perform feature engineering on the data frame
+```{r}
+range_data1 = decostand(data1, method="range")
+sd_data1 = decostand(data1, method = "standardize")
+log_data1 = log(data1)
+```
+
+Calculate standard deviation of a vector
+```{r}
+sd(height)
+```
+
+
