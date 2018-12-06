@@ -1,0 +1,57 @@
+---
+title: "Outlier-analysis"
+author: "Satheesh"
+date: "December 6, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+Clean workspace and set work dir
+
+```{r}
+rm(list = ls(all=TRUE))
+setwd("C:\\Users\\samanoh.FAREAST\\besantr\\outlier-anlaysis")
+```
+
+## Import data
+
+Importing Bankruptcy data
+
+```{r}
+data = read.csv("Bankruptcy_data.csv", header=T)
+summary(data)
+```
+Getting structure of data
+
+```{r}
+str(data)
+```
+
+Get null values count
+
+```{r}
+colSums(is.na(data))
+```
+Count of all null values
+```{r}
+sum(is.na(data$Attr1))
+```
+Perform Boxplot
+```{r}
+boxplot(data$Attr1)$stats
+```
+```{r}
+data$Attr1 = ifelse(data$Attr1<=(-5),NA,data$Attr1)
+data$Attr1 = ifelse(data$Attr1>=(5),NA,data$Attr1)
+boxplot(data$Attr1)
+```
+
+```{r}
+sum(is.na(data$Attr1))
+```
+
