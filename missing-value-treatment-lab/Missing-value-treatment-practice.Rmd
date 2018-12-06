@@ -1,0 +1,49 @@
+---
+title: "Missing Value treatment - R"
+output: html_notebook
+---
+
+Clear workspace and set working directory
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh.FAREAST\\besantr\\missing-value-treatment-lab")
+```
+
+Import Bankruptcy data
+
+```{r}
+bank_data <- read.csv("Bankruptcy_data.csv", header = TRUE)
+sum(is.na(bank_data))
+colSums(is.na(bank_data))
+```
+Get data subset of first 1000 rows
+
+```{r}
+data_1000 = bank_data[1:1000,]
+colSums(is.na(data_1000))
+```
+
+Import DMwR library
+
+```{r}
+#install.packages("DMwR")
+library("DMwR")
+```
+
+
+Performing Central Imputation and assigning it to new variable
+```{r}
+imp_central_data = centralImputation(data = data_1000)
+colSums(is.na(imp_central_data))
+sum(is.na(imp_central_data))
+```
+
+Performing KNN Imputation for the same data
+
+```{r}
+imp_knn_data <- knnImputation(data = data_1000, k=10)
+colSums(is.na(imp_knn_data))
+sum(is.na(imp_knn_data))
+```
+
