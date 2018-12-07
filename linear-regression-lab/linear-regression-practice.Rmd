@@ -1,0 +1,99 @@
+---
+title: "Simple Linear Regression - R"
+output: html_notebook
+---
+
+## Building Linear regression with Toyota data
+
+Clear workspace and set work dir
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh.FAREAST\\besantr\\linear-regression-lab")
+```
+
+Read data
+```{r}
+data = read.csv("Simple_Linear_Reg.csv")
+str(data)
+```
+
+Remove ID column
+```{r}
+data$Id = NULL
+str(data)
+```
+
+Get independent and target variables and build model
+```{r}
+x = data$Price
+y = data$Age_06_15
+
+lin_model = lm(formula = y~x, data = data)
+lin_model
+```
+Plot the graph
+```{r}
+plot(Age_06_15 ~ Price, data = data)
+abline(lm(Age_06_15 ~ Price, data=data)) # use '+' operator to combime line in R script
+```
+
+Get summary of Linear model
+```{r}
+summary(lin_model)
+```
+
+Predict using linear model
+```{r}
+my_prediction = predict(object = lin_model)
+comparision = cbind(my_prediction, data$Age_06_15)
+View(comparision)
+```
+
+## Calculate Metrics - RMSE
+
+Install libraries
+```{r}
+#install.packages("MLmetrics")
+library("MLmetrics")
+```
+
+calculate RMSE
+```{r}
+RMSE(y_pred = my_prediction, y_true = data$Age_06_15)
+```
+
+Perform outlier anlysis and repeat the process to get better metrics
+
+```{r}
+boxplot(data$Price)
+```
+
+```{r}
+data$Price = ifelse(data$Price >= 22000, 22000, data$Price)
+boxplot(data$Price)
+```
+
+Build linear model from outlied data
+```{r}
+new_model = lm(data$Age_06_15 ~ data$Price, data = data)
+new_model
+```
+Predict using new model
+
+```{r}
+my_new_prediction = predict(object = new_model)
+new_comparision = cbind(my_new_prediction, data$Age_06_15)
+View(new_comparision)
+```
+Compare and plot new prediction
+```{r}
+plot(Age_06_15 ~ Price, data = data)
+abline(new_model)
+```
+Get summary of new model
+```{r}
+summary(new_model)
+```
+
+
