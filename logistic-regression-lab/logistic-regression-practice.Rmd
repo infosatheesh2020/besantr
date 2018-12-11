@@ -1,0 +1,139 @@
+---
+title: "Logistic Regression - R"
+output: html_notebook
+---
+
+# Building Logistic regression with Bankruptcy data
+
+```{r}
+rm(list = ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\logistic-regression-lab")
+```
+
+
+Use Bankruptcy data
+
+```{r}
+bdata = read.csv("Bankruptcy_data.csv")
+```
+
+Install Libraries
+```{r}
+#install.packages("DMwR")
+library(DMwR)
+```
+
+Perform imputation
+```{r}
+sum(is.na(bdata))
+ci_data = centralImputation(bdata)
+sum(is.na(ci_data))
+```
+
+Get structure of imputed data
+```{r}
+str(ci_data)
+```
+
+CHange the target column to categorical
+```{r}
+ci_data$target = as.factor(as.character(ci_data$target))
+str(ci_data)
+```
+
+Get summary of target data to compute probable cutoff
+```{r}
+summary(ci_data$target)
+cutoff = 1765/34788
+cutoff
+```
+Perform Logistic regression
+```{r}
+log_bdata = glm(formula = target~., data=ci_data, family = binomial)
+```
+
+Get summary of model
+```{r}
+summary(log_bdata)
+```
+
+Predict the model
+```{r}
+prediction_bdata = predict(log_bdata, data = ci_data, type = "response")
+# type = "response" ensures to get logistic regression type instead of linear output
+```
+
+Round the output ot 3 digits and view the output
+```{r}
+View(round(prediction_bdata,3))
+```
+
+Apply the cutoff and change numeric to categorical value
+```{r}
+log_output = ifelse(prediction_bdata>cutoff,1,0)
+log_output<- as.factor(as.character(log_output))
+summary(log_output)
+```
+# Metrics
+
+
+```{r}
+#install.packages("MLmetrics")
+library(MLmetrics)
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(log_output, ci_data$target)
+```
+
+Calculate categorical metrics - precision
+```{r}
+Precision(log_output, ci_data$target)
+```
+
+Calculate categorical metrics - F1 score
+```{r}
+F1_Score(log_output, ci_data$target)
+```
+
+Plot confusion matrix
+```{r}
+ConfusionMatrix(log_output, ci_data$target)
+```
+
+# Apply different cutoff and try to calcualte metrics for comparision
+
+```{r}
+log_output = ifelse(prediction_bdata>0.05,1,0)
+log_output<- as.factor(as.character(log_output))
+summary(log_output)
+
+print("Recall : ")
+Recall(log_output, ci_data$target)
+
+print("Precision : ")
+Precision(log_output, ci_data$target)
+
+print("F1 Score : ")
+F1_Score(log_output, ci_data$target)
+
+print("Confusion matrix")
+ConfusionMatrix(log_output, ci_data$target)
+```
+
+Calculate ROCR for cutoff
+```{r}
+library(ROCR)
+
+# Predicting on the train data
+predicted <- predict(log_bdata,type="response")
+prob <- prediction(predicted,ci_data$target)
+
+# Getting the true positive rate and false negative rate
+tprfpr <- performance(prob, "tpr", "fpr")
+
+# Plotting the true positive rate and false negative rate based on the threshold value
+plot(tprfpr,col=rainbow(10), colorize=T, print.cutoffs.at=seq(0,1,0.05))
+```
