@@ -1,0 +1,106 @@
+---
+title: "Clustering - R"
+output: html_notebook
+---
+
+# Perform clustering - K-means, k-means++, heirarchical on iris data set
+
+Prepare the environment
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\clustering-lab")
+```
+
+Install libraries
+```{r}
+#install.packages("cluster")
+library("cluster")
+
+#install.packages("fpc")
+library("fpc")
+```
+
+Take iris dataset except last column (excluding target variable)
+```{r}
+# use "-" to drop columns
+# iris[, -c(3:5)] - drop cols 3 to 5
+# iris[,-c(3,5)] - drop cols 3 and 5
+data <- iris[,-5]
+str(data)
+```
+
+Looking for NA values
+```{r}
+sum(is.na(data))
+```
+
+Applying k-means model and plotting it
+```{r}
+set.seed(10)
+cluster <- kmeans(x=data, centers = 3)
+plotcluster(data,cluster$cluster)
+```
+
+Plot cluster - using principal component variation
+```{r}
+clusplot(data, cluster$cluster, color=TRUE, shade=TRUE,labels=2, lines=0)
+```
+
+Try to plot only 2 columns to understand distribution
+```{r}
+plot(data[1:2],cluster$cluster)
+```
+
+Plot confusion matrix to compare with target variables
+```{r}
+y=iris$Species
+table(y,cluster$cluster)
+```
+
+```{r}
+plot(data[c("Sepal.Length", "Sepal.Width")], col=cluster$cluster)
+```
+
+# K-means++ algorithm
+
+Install libraries
+```{r}
+#install.packages("LICORS")
+library("LICORS")
+```
+
+Build k-means++ model
+```{r}
+set.seed(10)
+kmpp <- kmeanspp(data=iris[,-5], k=3, start="random", nstart = 10)
+plotcluster(iris[,-5], kmpp$cluster)
+```
+
+Plot using Princil component variation - PCV
+```{r}
+clusplot(iris[,-5], kmpp$cluster, color=TRUE, shade=TRUE,labels=2, lines=0)
+```
+
+Plot confusion matrix
+```{r}
+y=iris$Species
+table(y,kmpp$cluster)
+```
+
+# heirarchical clustering
+
+Heirarchial clustering using US crime rate data of all states
+
+```{r}
+crimedata = USArrests
+crimedata
+```
+
+```{r}
+distancematrix = dist(crimedata)
+# method = ave is for agloromative
+heirarchical_cluster = hclust(distancematrix, method = "ave")
+plot(heirarchical_cluster)
+
+```
+

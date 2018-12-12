@@ -1,0 +1,62 @@
+---
+title: "Clusterning Sample"
+author: "Mugilan"
+date: "27 April 2018"
+output: html_document
+---
+Making sure that all required all libraries are installed. I'm calling all libraries
+```{r}
+#install.packages("cluster")
+library("cluster")
+
+#install.packages("fpc")
+library(fpc)
+
+```
+If you get error for installing packages, give direct path in the code.
+"install.packages("fpc",repos = c("http://rstudio.org/_packages", "http://cran.rstudio.com"))"
+
+
+Taking Iris as my data frame and removing the 5th column, since it has been 
+already classified
+```{r}
+data<-iris[,-5]
+str(data)
+```
+
+Looking for NA values
+```{r}
+sum(is.na(data))
+```
+
+
+Appltying Kmeans model to the data & plotting it
+```{r}
+cluster<-kmeans(x = data,centers = 3)
+
+plotcluster(data,cluster$cluster)
+```
+
+```{r}
+clusplot(data, cluster$cluster, color=TRUE, shade=TRUE,labels=2, lines=0)
+
+```
+
+```{r}
+plot(data[1:2],cluster$cluster)
+```
+
+```{r}
+y=iris$Species
+table(y,cluster$cluster)
+
+```
+
+
+```{r}
+plot(data[c("Sepal.Length", "Sepal.Width")], col=cluster$cluster)
+```
+Hierarchical clustering
+```{r}
+plot( hclust(dist(USArrests), "ave") )
+```
