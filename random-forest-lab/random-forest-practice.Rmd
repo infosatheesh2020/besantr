@@ -1,0 +1,300 @@
+---
+title: "Random forest in R"
+output: html_notebook
+---
+
+# Create Random forst algorithm using Bankruptcy data
+
+Setup workspace
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\random-forest-lab")
+
+```
+
+Read data
+```{r}
+# Read train and test data
+train_data=read.csv(file = "Bankruptcy_data.csv",header = T)
+
+#Check summary and convert to appropraite data types
+str(train_data)
+```
+
+Drop the variable ID as it does not give any information
+```{r}
+#summary(train_data)
+train_data$ID=NULL
+```
+
+Change structure of target variable
+```{r}
+train_data$target=as.factor(as.character(train_data$target))
+str(train_data)
+```
+Check for NA values
+```{r}
+sum(is.na(train_data))
+```
+
+KNN imputaion
+```{r}
+#install.packages("DMwR")
+library(DMwR)
+```
+
+
+Perform KNN imputation for each output category separately
+```{r}
+# KNN imputation for train data : done separately for each class
+
+#Split data based on target variable
+train_data_0=train_data[train_data$target==0,]
+train_data_1=train_data[train_data$target==1,]
+
+train_data_0_knn=centralImputation(data = train_data_0)
+sum(is.na(train_data_0_knn))
+
+train_data_1_knn=centralImputation(data = train_data_1)
+sum(is.na(train_data_1_knn))
+
+# combine imputed data
+train_data_knn=rbind(train_data_0_knn,train_data_1_knn)
+```
+
+Split the train data into train and validation sets
+
+```{r}
+#install.packages("ddalpha")
+#install.packages("caret")
+#install.packages("randomForest")
+library(caret)
+library(randomForest)
+```
+
+Split data
+```{r}
+rows=createDataPartition(y = train_data_knn$target,p=0.8,list=FALSE)
+train_split=train_data_knn[rows,]
+val_split=train_data_knn[-rows,]
+```
+
+Build Random forest
+```{r}
+model = randomForest(target ~ ., data=train_split, 
+                     keep.forest=TRUE,do.trace = TRUE, ntree=50) 
+table(train_split$target)
+print(model)
+```
+
+Predict on train data
+```{r}
+pred_Train = predict(model,train_split[,-65],type="response",norm.votes=TRUE)
+```
+
+Build confusion matrix on trained data
+```{r}
+#install.packages("e1071")
+library(e1071)
+```
+
+```{r}
+# Build confusion matrix and find accuracy   
+cm_Train = table("actual" = train_split$target, "predicted" = pred_Train)
+confusionMatrix(data = pred_Train,reference = train_split$target,positive = "1")
+sensitivity_Train <- cm_Train[2, 2]/sum(cm_Train[2, ])
+specificity_Train <- cm_Train[1, 1]/sum(cm_Train[1, ])
+accruacy_Train = sum(diag(cm_Train))/sum(cm_Train)
+precision_Train= cm_Train[2, 2]/sum(cm_Train[,2])
+F1_Train=2*precision_Train*sensitivity_Train/(precision_Train+sensitivity_Train)
+```
+
+Prediction on validation data
+```{r}
+pred_Val = predict(model, val_split[-65],type="response",norm.votes=TRUE)
+```
+
+Build confusion matrix on validation data
+```{r}
+cm_Val = table("actual" = val_split$target, "predicted" = pred_Val);
+confusionMatrix(data = pred_Val,reference = val_split$target,positive = "1")
+sensitivity_Val <- cm_Val[2, 2]/sum(cm_Val[2, ])
+specificity_Val <- cm_Val[1, 1]/sum(cm_Val[1, ])
+accruacy_Val = sum(diag(cm_Val))/sum(cm_Val)
+precision_Val= cm_Val[2, 2]/sum(cm_Val[,2])
+F1_Val=2*precision_Val*sensitivity_Val/(precision_Val+sensitivity_Val)
+```
+Get important attributes from the model
+
+```{r}
+# Important attributes
+model$importance  
+round(importance(model), 2)   
+```
+
+Extract important attributes for further iteration
+
+```{r}
+rf_Imp_Attr = data.frame(model$importance)
+rf_Imp_Attr = data.frame(row.names(rf_Imp_Attr),rf_Imp_Attr[,1])
+
+colnames(rf_Imp_Attr) = c('Attributes', 'Importance')
+rf_Imp_Attr = rf_Imp_Attr[order(rf_Imp_Attr$Importance, decreasing = TRUE),]
+```
+
+Plot important variables
+
+```{r}
+# plot (directly prints the important attributes) 
+varImpPlot(model)
+```
+
+# Build random forest using top5 important attributes
+```{r}
+# Build randorm forest using top 5 important attributes. 
+top_Imp_Attr = as.character(rf_Imp_Attr$Attributes[1:5])
+```
+
+Build classification using random forest
+```{r}
+model_Imp = randomForest(target~.,
+                         data=train_split[,c(top_Imp_Attr,"target")], 
+                         keep.forest=TRUE,ntree=50,do.trace = TRUE) 
+```
+
+Print and understand the model
+
+```{r}
+print(model_Imp)
+```
+
+Importance attributes
+```{r}
+# Important attributes
+model_Imp$importance  
+```
+
+Predict on train data
+
+```{r}
+# Predict on Train data 
+pred_Train = predict(model_Imp, 
+                     train_split[,setdiff(names(train_split), "target")],
+                     type="response", 
+                     norm.votes=TRUE)
+```
+
+Build confusion matrix and accuracy on train data
+
+```{r}
+cm_Train = table("actual" = train_split$target, "predicted" = pred_Train);
+confusionMatrix(data = pred_Train,reference = train_split$target,positive = "1")
+sensitivity_Train <- cm_Train[2, 2]/sum(cm_Train[2, ])
+specificity_Train <- cm_Train[1, 1]/sum(cm_Train[1, ])
+accruacy_Train = sum(diag(cm_Train))/sum(cm_Train)
+precision_Train= cm_Train[2, 2]/sum(cm_Train[,2])
+F1_Train=2*precision_Train*sensitivity_Train/(precision_Train+sensitivity_Train)
+```
+
+Predict on validation data
+
+```{r}
+pred_Val = predict(model_Imp, val_split[,setdiff(names(val_split),
+                                                 "target")],
+                   type="response", 
+                   norm.votes=TRUE)
+```
+
+Build confusion matrix and accuracy on validation data
+```{r}
+cm_Val = table("actual" = val_split$target, "predicted" = pred_Val);
+confusionMatrix(data = pred_Val,reference = val_split$target,positive = "1")
+sensitivity_Val <- cm_Val[2, 2]/sum(cm_Val[2, ])
+specificity_Val <- cm_Val[1, 1]/sum(cm_Val[1, ])
+accruacy_Val = sum(diag(cm_Val))/sum(cm_Val)
+precision_Val= cm_Val[2, 2]/sum(cm_Val[,2])
+F1_Val=2*precision_Val*sensitivity_Val/(precision_Val+sensitivity_Val)
+```
+
+# Build C5.0 model
+
+Install libraries
+```{r}
+#install.packages("C50")
+library(C50)
+```
+
+Build model
+```{r}
+c5_model = C5.0(x = train_data_knn[,-65],y = train_data_knn[,65])
+summary(c5_model)  
+```
+
+Predict model on training data
+```{r}
+c5_pred = predict(c5_model,train_data_knn[,-65])
+c5_cm = table(c5_pred,train_data_knn$target)
+c5_cm
+```
+
+Plot metrics
+```{r}
+library(MLmetrics)
+```
+
+```{r}
+Recall(y_true = train_data_knn$target,y_pred = c5_pred)
+F1_Score(y_true = train_data_knn$target,y_pred = c5_pred)
+```
+
+Predict model on validation data
+```{r}
+c5_pred_val = predict(object = c5_model,val_split[,-65])
+c5_val_cm = table(c5_pred_val,val_split$target)
+```
+
+Compute metrics on validation data
+```{r}
+Recall(y_true = val_split$target,y_pred = c5_pred_val)
+F1_Score(y_true = val_split$target,y_pred = c5_pred_val)
+```
+
+# Build CART model
+
+```{r}
+#install.packages("rpart")
+library(rpart)
+```
+Build CART model
+
+```{r}
+cart_model = cart(x = train_data_knn[,-65],y = train_data_knn[,65])
+summary(cart_model) 
+```
+
+Predict train data using CART
+```{r}
+cart_pred = predict(cart_model,train_data_knn[,-65])
+cart_cm = table(cart_pred,train_data_knn$target)
+```
+
+Metrics for train data in CART
+```{r}
+#library(MLmetrics)
+Recall(y_true = train_data_knn$target,y_pred = cart_pred)
+F1_Score(y_true = train_data_knn$target,y_pred = cart_pred)
+```
+
+Predict validation data using CART
+```{r}
+cart_pred_val = predict(object = cart_model ,val_split[,-65])
+cart_val_cm = table(cart_pred_val ,val_split$target)
+```
+
+Metrics for validation data in CART
+```{r}
+Recall(y_true = val_split$target,y_pred = cart_pred_val)
+F1_Score(y_true = val_split$target,y_pred = cart_pred_val)
+```
+
