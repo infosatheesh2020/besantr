@@ -1,15 +1,8 @@
-
-
-
-
-
-## MODEL-1 : RANDOM FORESTS
-
 # Clear global environment variables
 rm(list=ls(all=TRUE))
 
 # Set working directory
-setwd("C:/Users/Karmugilan/Downloads/Besant")
+setwd("C:/Users/10891/Downloads/mukil/Besant")
 
 # Read train and test data
 train_data=read.csv(file = "Bankruptcy_data.csv",header = T)
@@ -22,6 +15,7 @@ train_data$ID=NULL
 
 train_data$target=as.factor(as.character(train_data$target))
 str(train_data)
+summary(train_data$target)
 
 # Check NA values
 sum(is.na(train_data))
@@ -45,7 +39,7 @@ train_data_knn=rbind(train_data_0_knn,train_data_1_knn)
 # Split the train data into train and validation sets
 install.packages("ddalpha")
 library(caret)
-rows=createDataPartition(y = train_data_knn$target,p=0.8,list=FALSE)
+rows=createDataPartition(y = train_data_knn$target,p=0.7,list=FALSE)
 train_split=train_data_knn[rows,]
 val_split=train_data_knn[-rows,]
 
@@ -164,10 +158,9 @@ F1_Score(y_true = val_split$target,y_pred = c5_pred_val)
 
 install.packages("rpart")
 library(rpart)
-cart_model = cart(x = train_data_knn[,-65],y = train_data_knn[,65])
-summary(cart_model)  
-
-cart_pred = predict(cart_model,train_data_knn[,-65])
+cart_model = rpart(train_data_knn$target~.,data = train_data_knn)
+summary(cart_model)
+cart_pred = predict(cart_model,train_data_knn[,-65],type = "class")
 cart_cm = table(cart_pred,train_data_knn$target)
 library(MLmetrics)
 Recall(y_true = train_data_knn$target,y_pred = cart_pred)

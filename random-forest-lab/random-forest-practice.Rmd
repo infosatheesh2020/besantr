@@ -269,13 +269,17 @@ library(rpart)
 Build CART model
 
 ```{r}
-cart_model = cart(x = train_data_knn[,-65],y = train_data_knn[,65])
+cart_model = rpart(train_data_knn$target~.,data = train_data_knn)
 summary(cart_model) 
+```
+
+```{r}
+length(train_data_knn$target)
 ```
 
 Predict train data using CART
 ```{r}
-cart_pred = predict(cart_model,train_data_knn[,-65])
+cart_pred = predict(cart_model,train_data_knn[,-65], ,type = "class")
 cart_cm = table(cart_pred,train_data_knn$target)
 ```
 
@@ -288,7 +292,7 @@ F1_Score(y_true = train_data_knn$target,y_pred = cart_pred)
 
 Predict validation data using CART
 ```{r}
-cart_pred_val = predict(object = cart_model ,val_split[,-65])
+cart_pred_val = predict(object = cart_model ,val_split[,-65], type = "class")
 cart_val_cm = table(cart_pred_val ,val_split$target)
 ```
 
