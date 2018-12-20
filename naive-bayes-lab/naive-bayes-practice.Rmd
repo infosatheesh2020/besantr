@@ -1,0 +1,105 @@
+---
+title: "Naive Bayes in R"
+output: html_notebook
+---
+
+# Naive bayes implementation in R
+
+Set up the environment
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\naive-bayes-lab")
+```
+
+Read data
+```{r}
+Bank <- read.table("Logistic.txt", sep=";", header = TRUE)
+str(Bank)
+```
+
+Recode the column values
+```{r}
+Bank$outcome <- ifelse(Bank$y == "yes", 1, 0)
+Bank$outcome <- as.factor(as.character(Bank$outcome))
+str(Bank$outcome)
+Bank <- Bank[,-17]
+
+```
+
+Check for missing values
+```{r}
+sum(is.na(Bank))
+```
+
+Removing/changing numerical to categorical data
+```{r}
+Bank$age <- as.factor(as.character(Bank$age))
+Bank$balance <- NULL
+Bank$day <- as.factor(as.character(Bank$day))
+Bank$duration <- NULL
+Bank$campaign <-as.factor(as.character(Bank$campaign))
+Bank$pdays <- NULL
+Bank$previous <- as.factor( as.character(Bank$previous))
+```
+
+Looking at structure of final data and summary
+```{r}
+ str(Bank)
+summary(Bank)
+```
+
+Install libraries
+```{r}
+#install.packages("naivebayes")
+library("naivebayes")
+```
+
+Build model
+```{r}
+naive_model = naive_bayes(x=Bank[,-14], y=Bank$outcome)
+```
+
+Predicting on the same data
+```{r}
+my_predictions = predict(naive_model, Bank[,-14])
+summary(my_predictions)
+```
+
+Comparing the accuracy
+```{r}
+comparision = cbind(Actual = Bank$outcome, Predicted = my_predictions)
+View(comparision)
+```
+
+Build confusion matrix
+```{r}
+table(Actual = Bank$outcome, Predicted = my_predictions)
+```
+# Error metrics
+Recall value
+```{r}
+library(MLmetrics)
+recall_value = Recall(y_true = Bank$outcome, y_pred = my_predictions)
+recall_value
+```
+
+Precision
+
+```{r}
+precision_value = Precision(y_true = Bank$outcome, y_pred = my_predictions)
+precision_value
+```
+
+F1 score
+```{r}
+f1_score = F1_Score(y_true = Bank$outcome, y_pred = my_predictions)
+f1_score
+```
+
+Specificity
+```{r}
+specificity_score = Specificity(y_true = Bank$outcome, y_pred = my_predictions)
+specificity_score
+```
+
