@@ -1,0 +1,211 @@
+---
+title: "Bankruptcy project in R"
+output: html_notebook
+---
+
+Clean workspace
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\bankruptcy-project")
+```
+
+Get Data and view summary
+
+```{r}
+data = read.csv("Bankruptcy_data.csv", header = TRUE)
+str(data)
+```
+
+COnvert target variable to categorical
+
+```{r}
+data$target = as.factor(as.character(data$target))
+data$ID = NULL
+str(data)
+```
+
+# Perform Random forest to find important attributes
+
+Check for missing values
+
+```{r}
+sum(is.na(data))
+```
+
+Perform Central imputation if missing values found
+
+```{r}
+library(DMwR)
+```
+
+```{r}
+ci_data = centralImputation(data = data)
+sum(is.na(ci_data))
+```
+
+Random forest
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+```{r}
+model = randomForest(target ~ ., data=ci_data, keep.forest=TRUE, do.trace=TRUE, ntrees=50)
+```
+
+Find importance from the model
+
+```{r}
+model$importance
+```
+
+Extract important attributes in data frame
+
+```{r}
+rf_imp_attr = data.frame(model$importance)
+rf_imp_attr = data.frame(row.names(rf_imp_attr), rf_imp_attr[,1])
+colnames(rf_imp_attr) = c("Attributes", "Importance")
+rf_imp_attr = rf_imp_attr[order(rf_imp_attr$Importance, decreasing = TRUE),]
+rf_imp_attr
+```
+
+Plot important attributes in graph
+
+```{r}
+varImpPlot(model)
+```
+
+# Select top 6 based on the importance
+
+```{r}
+imp_attr = as.character(rf_imp_attr$Attributes[1:6])
+imp_attr
+```
+
+Select important attributes from actual data and perform iterations
+
+```{r}
+imp_data = data[imp_attr]
+imp_data
+```
+
+# Perform outlier analysis - Box plot
+
+First Feature - original
+Attr27
+
+```{r}
+boxplot(imp_data$Attr27)$stats
+```
+
+First feature - outlied
+Attr27
+
+```{r}
+imp_data$Attr27 = ifelse(imp_data$Attr27 >= 70000, NA, imp_data$Attr27)
+imp_data$Attr27 = ifelse(imp_data$Attr27 <= -20000, NA, imp_data$Attr27)
+boxplot(imp_data$Attr27)$stats
+```
+
+Second Feature - original
+Attr34
+
+```{r}
+boxplot(imp_data$Attr34)$stats
+```
+
+Second feature - outlied
+Attr34
+
+```{r}
+imp_data$Attr34 = ifelse(imp_data$Attr34 >= 150, NA, imp_data$Attr34)
+imp_data$Attr34 = ifelse(imp_data$Attr34 <= -25, NA, imp_data$Attr34)
+boxplot(imp_data$Attr34)$stats
+```
+
+Third attribute - original
+Attr46
+
+```{r}
+boxplot(imp_data$Attr46)$stats
+```
+
+Third attribute - outlied
+Attr46
+
+```{r}
+imp_data$Attr46 = ifelse(imp_data$Attr46 >= 125, NA, imp_data$Attr46)
+imp_data$Attr46 = ifelse(imp_data$Attr46 <= -50, NA, imp_data$Attr46)
+boxplot(imp_data$Attr46)$stats
+```
+
+Fourth attribute - original
+Attr58
+
+```{r}
+boxplot(imp_data$Attr58)$stats
+```
+
+Fourth attribte - Outlied
+Attr58
+
+```{r}
+imp_data$Attr58 = ifelse(imp_data$Attr58 >= 5, NA, imp_data$Attr58)
+imp_data$Attr58 = ifelse(imp_data$Attr58 <= 0, NA, imp_data$Attr58)
+boxplot(imp_data$Attr58)$stats
+```
+
+Fifth Attribute - original
+Attr56
+
+```{r}
+boxplot(imp_data$Attr56)$stats
+```
+
+Fifth Attribute - outlied
+Attr56
+
+```{r}
+imp_data$Attr56 = ifelse(imp_data$Attr56 >= 1, NA, imp_data$Attr56)
+imp_data$Attr56 = ifelse(imp_data$Attr56 <= -4, NA, imp_data$Attr56)
+boxplot(imp_data$Attr56)$stats
+```
+
+Sixth Attribute - original
+Attr24
+
+```{r}
+boxplot(imp_data$Attr24)$stats
+```
+
+Sixth attribute - outlied
+Attr24
+
+```{r}
+imp_data$Attr24 = ifelse(imp_data$Attr24 >= 4.5, NA, imp_data$Attr24)
+imp_data$Attr24 = ifelse(imp_data$Attr24 <= -5, NA, imp_data$Attr24)
+boxplot(imp_data$Attr24)
+```
+
+# Missing value treatment - KNN imputation
+
+Check missing values
+
+```{r}
+sum(is.na(imp_data))
+```
+
+Import libraries
+
+```{r}
+library(DMwR)
+```
+
+```{r}
+imp_data
+str(imp_data)
+imp_data_knn_imputed = knnImputation(imp_data, k = 7, scale = T, meth = "weighAvg", distData = NULL)
+```
+
