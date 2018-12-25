@@ -88,7 +88,9 @@ Select important attributes from actual data and perform iterations
 
 ```{r}
 imp_data = data[imp_attr]
-imp_data
+imp_data_full <- imp_data
+imp_data_full$target <- data$target
+str(imp_data_full)
 ```
 
 # Perform outlier analysis - Box plot
@@ -97,96 +99,96 @@ First Feature - original
 Attr27
 
 ```{r}
-boxplot(imp_data$Attr27)$stats
+boxplot(imp_data_full$Attr27)$stats
 ```
 
 First feature - outlied
 Attr27
 
 ```{r}
-imp_data$Attr27 = ifelse(imp_data$Attr27 >= 70000, NA, imp_data$Attr27)
-imp_data$Attr27 = ifelse(imp_data$Attr27 <= -20000, NA, imp_data$Attr27)
-boxplot(imp_data$Attr27)$stats
+imp_data_full$Attr27 = ifelse(imp_data_full$Attr27 >= 70000, NA, imp_data_full$Attr27)
+imp_data_full$Attr27 = ifelse(imp_data_full$Attr27 <= -20000, NA, imp_data_full$Attr27)
+boxplot(imp_data_full$Attr27)$stats
 ```
 
 Second Feature - original
 Attr34
 
 ```{r}
-boxplot(imp_data$Attr34)$stats
+boxplot(imp_data_full$Attr34)$stats
 ```
 
 Second feature - outlied
 Attr34
 
 ```{r}
-imp_data$Attr34 = ifelse(imp_data$Attr34 >= 150, NA, imp_data$Attr34)
-imp_data$Attr34 = ifelse(imp_data$Attr34 <= -25, NA, imp_data$Attr34)
-boxplot(imp_data$Attr34)$stats
+imp_data_full$Attr34 = ifelse(imp_data_full$Attr34 >= 150, NA, imp_data_full$Attr34)
+imp_data_full$Attr34 = ifelse(imp_data_full$Attr34 <= -25, NA, imp_data_full$Attr34)
+boxplot(imp_data_full$Attr34)$stats
 ```
 
 Third attribute - original
 Attr46
 
 ```{r}
-boxplot(imp_data$Attr46)$stats
+boxplot(imp_data_full$Attr46)$stats
 ```
 
 Third attribute - outlied
 Attr46
 
 ```{r}
-imp_data$Attr46 = ifelse(imp_data$Attr46 >= 125, NA, imp_data$Attr46)
-imp_data$Attr46 = ifelse(imp_data$Attr46 <= -50, NA, imp_data$Attr46)
-boxplot(imp_data$Attr46)$stats
+imp_data_full$Attr46 = ifelse(imp_data_full$Attr46 >= 125, NA, imp_data_full$Attr46)
+imp_data_full$Attr46 = ifelse(imp_data_full$Attr46 <= -50, NA, imp_data_full$Attr46)
+boxplot(imp_data_full$Attr46)$stats
 ```
 
 Fourth attribute - original
 Attr58
 
 ```{r}
-boxplot(imp_data$Attr58)$stats
+boxplot(imp_data_full$Attr58)$stats
 ```
 
 Fourth attribte - Outlied
 Attr58
 
 ```{r}
-imp_data$Attr58 = ifelse(imp_data$Attr58 >= 5, NA, imp_data$Attr58)
-imp_data$Attr58 = ifelse(imp_data$Attr58 <= 0, NA, imp_data$Attr58)
-boxplot(imp_data$Attr58)$stats
+imp_data_full$Attr58 = ifelse(imp_data_full$Attr58 >= 5, NA, imp_data_full$Attr58)
+imp_data_full$Attr58 = ifelse(imp_data_full$Attr58 <= 0, NA, imp_data_full$Attr58)
+boxplot(imp_data_full$Attr58)$stats
 ```
 
 Fifth Attribute - original
 Attr56
 
 ```{r}
-boxplot(imp_data$Attr56)$stats
+boxplot(imp_data_full$Attr56)$stats
 ```
 
 Fifth Attribute - outlied
 Attr56
 
 ```{r}
-imp_data$Attr56 = ifelse(imp_data$Attr56 >= 1, NA, imp_data$Attr56)
-imp_data$Attr56 = ifelse(imp_data$Attr56 <= -4, NA, imp_data$Attr56)
-boxplot(imp_data$Attr56)$stats
+imp_data_full$Attr56 = ifelse(imp_data_full$Attr56 >= 1, NA, imp_data_full$Attr56)
+imp_data_full$Attr56 = ifelse(imp_data_full$Attr56 <= -4, NA, imp_data_full$Attr56)
+boxplot(imp_data_full$Attr56)$stats
 ```
 
 Sixth Attribute - original
 Attr24
 
 ```{r}
-boxplot(imp_data$Attr24)$stats
+boxplot(imp_data_full$Attr24)$stats
 ```
 
 Sixth attribute - outlied
 Attr24
 
 ```{r}
-imp_data$Attr24 = ifelse(imp_data$Attr24 >= 4.5, NA, imp_data$Attr24)
-imp_data$Attr24 = ifelse(imp_data$Attr24 <= -5, NA, imp_data$Attr24)
-boxplot(imp_data$Attr24)
+imp_data_full$Attr24 = ifelse(imp_data_full$Attr24 >= 4.5, NA, imp_data_full$Attr24)
+imp_data_full$Attr24 = ifelse(imp_data_full$Attr24 <= -5, NA, imp_data_full$Attr24)
+boxplot(imp_data_full$Attr24)
 ```
 
 # Missing value treatment - KNN imputation
@@ -194,7 +196,7 @@ boxplot(imp_data$Attr24)
 Check missing values
 
 ```{r}
-sum(is.na(imp_data))
+sum(is.na(imp_data_full))
 ```
 
 Import libraries
@@ -203,9 +205,221 @@ Import libraries
 library(DMwR)
 ```
 
+
+Find Columns with more than 3 NA values and ignore (or select columns with <=3 null values)
+
 ```{r}
-imp_data
-str(imp_data)
-imp_data_knn_imputed = knnImputation(imp_data, k = 7, scale = T, meth = "weighAvg", distData = NULL)
+imp_data_no_na = imp_data_full[rowSums(is.na(imp_data_full)) <= 3,]
+str(imp_data_no_na)
 ```
+
+```{r}
+imp_data_knn_imputed = knnImputation(imp_data_no_na, k = 7, scale = T, meth = "weighAvg", distData = NULL)
+sum(is.na(imp_data_knn_imputed))
+```
+
+Export to CSV
+```{r}
+write.csv(imp_data_knn_imputed, file="bankruptcy_imp_knn_imputed.csv")
+```
+
+# Train test split
+
+Split imputed data
+```{r}
+set.seed(88)
+trainrows = createDataPartition(y=imp_data_knn_imputed$target, p=0.8, list = FALSE)
+train_split = imp_data_knn_imputed[trainrows,]
+val_split = imp_data_knn_imputed[-trainrows,]
+```
+
+
+
+
+
+
+# Build Model - Logistic regression
+
+Build model with glm for logistic regression
+
+```{r}
+log_reg_model = glm(formula = target~., data = train_split, family = binomial)
+```
+
+Predict the model from val_data
+
+```{r}
+log_reg_prediction = predict(log_reg_model, newdata=val_split[-7], type="response")
+```
+
+View predicted output
+
+```{r}
+View(round(log_reg_prediction,3))
+```
+
+# Logistic regression Model - apply cutoff based on distribution
+
+Identify cutoff
+
+```{r}
+summary(imp_data_knn_imputed$target)
+
+cutoff = 1763/34755
+cutoff
+```
+
+Apply cutoff on prediction
+
+```{r}
+log_reg_output = ifelse(log_reg_prediction >= cutoff, 1, 0)
+log_reg_output = as.factor(as.character(log_reg_output))
+summary(log_reg_output)
+```
+
+# Metrics - Logistic regression without ROC
+
+Import library
+```{r}
+library("MLmetrics")
+```
+
+Plot Confusion matrix
+```{r}
+confusionMatrix(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(log_reg_output, val_split$target)
+```
+
+# Logistic regression Model - apply cutoff based on ROC
+
+Import library
+```{r}
+library("ROCR")
+```
+
+Calculate ROC
+
+```{r}
+rocr_pred = prediction(log_reg_prediction, val_split$target)
+rocr_perf = performance(rocr_pred, "tpr", "fpr")
+plot(rocr_perf, colorize = TRUE)
+```
+
+Get ROC cutoff value
+
+
+```{r}
+#install.packages("Epi")
+library(Epi)
+```
+
+```{r}
+rc <- ROC(form = target~., data = val_split, plot="sp") 
+```
+
+```{r}
+## optimal combination
+opt <- which.max(rowSums(rc$res[, c("sens", "spec")]))
+## optimal cut-off point 
+roc_cutoff = rc$res$lr.eta[opt]
+roc_cutoff
+```
+
+Apply ROC cutoff on prediction
+
+```{r}
+log_reg_output = ifelse(log_reg_prediction >= roc_cutoff, 1, 0)
+log_reg_output = as.factor(as.character(log_reg_output))
+summary(log_reg_output)
+```
+
+
+
+
+# Metrics - Logistic regression with ROC
+
+Import library
+```{r}
+library("MLmetrics")
+```
+
+Plot Confusion matrix
+```{r}
+confusionMatrix(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(log_reg_output, val_split$target)
+```
+
+
+
+
+# Build Model - KNN
+
+# Metrics - KNN
+
+
+
+
+
+# Build Model - Random Forest
+
+# Metrics - Random Forest
+
+
+
+
+
+# Build Model - CART
+
+# Metrics - CART
+
+
+
+
+# Build Model - C5.0
+
+# Metrics - C5.0
+
+
+
+# Build Model - Naive Bayes
+
+# Metrics - Naive Bayes
+
+
+
+
 
