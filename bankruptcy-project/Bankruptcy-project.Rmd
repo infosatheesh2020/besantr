@@ -342,6 +342,13 @@ roc_cutoff = rc$res$lr.eta[opt]
 roc_cutoff
 ```
 
+Plotting the ROC cutoff in graph
+
+```{r}
+ROC(form = target~., data = val_split, plot = "ROC", MX = TRUE)
+```
+
+
 Apply ROC cutoff on prediction
 
 ```{r}
