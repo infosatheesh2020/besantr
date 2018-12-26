@@ -1,6 +1,8 @@
 ---
 title: "Bankruptcy project in R"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 Clean workspace
@@ -207,6 +209,7 @@ library(DMwR)
 
 
 Find Columns with more than 3 NA values and ignore (or select columns with <=3 null values)
+(KNN imputation can't be performed for rows having values less than 3)
 
 ```{r}
 imp_data_no_na = imp_data_full[rowSums(is.na(imp_data_full)) <= 3,]
@@ -395,38 +398,334 @@ F1_Score(log_reg_output, val_split$target)
 
 # Build Model - KNN
 
+Install libraries
+
+```{r}
+#install.packages("class")
+library("class")
+```
+
+Perform KNN classification
+
+```{r}
+knn_class_prediction = knn(train = train_split[-7], test = val_split[-7], cl = train_split$target, k=7 )
+```
+
+
 # Metrics - KNN
 
+Finding accuracy
 
+```{r}
+#install.packages("gmodels")
+library("gmodels")
+```
 
+Using crosstable for confusion matrix
+
+```{r}
+CrossTable(x = val_split$target, y = knn_class_prediction, prop.chisq = FALSE)
+```
+
+Calculate Accuracy
+
+```{r}
+(6911+69)/7303
+```
+
+Install MLmetrics
+
+```{r}
+library("MLmetrics")
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split$target, y_pred = knn_class_prediction)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split$target, y_pred = knn_class_prediction)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(y_true = val_split$target, y_pred = knn_class_prediction)
+```
 
 
 # Build Model - Random Forest
 
+Build model
+
+Load Random forest library
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+```{r}
+rf_model = randomForest(target~., data=train_split, keep.forest=TRUE, do.trace=TRUE, ntrees=50)
+```
+
+Predict validation data using random forest
+
+```{r}
+rf_prediction = predict(rf_model, val_split[-7], type="response", norm.votes=TRUE)
+```
+
+
 # Metrics - Random Forest
 
+Confusion Matrix
 
+```{r}
+confusionMatrix(data = rf_prediction, reference = val_split$target,positive = "1")
+```
+
+Recall - Rf
+
+```{r}
+Recall(y_true = val_split$target, y_pred = rf_prediction)
+```
+
+Precision - rf
+
+```{r}
+Precision(y_true = val_split$target, y_pred = rf_prediction)
+```
+
+Sensitivity - Rf
+
+```{r}
+Sensitivity(y_true = val_split$target, y_pred = rf_prediction)
+```
+
+Specificity - Rf
+
+```{r}
+Specificity(y_true = val_split$target, y_pred = rf_prediction)
+```
+
+F1 Score - Rf
+
+```{r}
+F1_Score(y_true = val_split$target, y_pred = rf_prediction)
+```
 
 
 
 # Build Model - CART
 
+Install libraries
+
+```{r}
+#install.packages("rpart")
+library(rpart)
+```
+
+Build CART model
+
+```{r}
+cart_model = rpart(train_split$target~.,data = train_split)
+summary(cart_model) 
+```
+
+
+Predict using CART
+
+```{r}
+cart_prediction = predict(cart_model, val_split[-7], type = "class")
+```
+
+
 # Metrics - CART
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = cart_prediction, reference = val_split$target,positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split$target, y_pred = cart_prediction)
+```
 
 
 
 
 # Build Model - C5.0
 
+Install packages
+
+```{r}
+#install.packages("C50")
+library("C50")
+```
+
+
+Build model C5.0
+
+```{r}
+c50_model = C5.0(x = train_split[-7], y = train_split$target)
+summary(c50_model)
+```
+
+Predict model on validation data 
+
+```{r}
+c50_prediction = predict(c50_model, newdata=val_split[-7])
+```
+
+
+
+
 # Metrics - C5.0
 
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = c50_prediction, reference = val_split$target, positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split$target, y_pred = c50_prediction)
+```
 
 
 # Build Model - Naive Bayes
 
+Install Libraries
+
+```{r}
+#install.packages("naivebayes")
+library("naivebayes")
+```
+
+Build model
+
+```{r}
+naive_model = naive_bayes(x = train_split[-7], y = train_split$target)
+summary(naive_model)
+```
+
+Predict model
+
+```{r}
+naive_prediction = predict(naive_model, newdata = val_split[-7])
+summary(naive_prediction)
+```
+
+
 # Metrics - Naive Bayes
 
 
+Confusion Matrix
 
+```{r}
+confusionMatrix(data = naive_prediction, reference = val_split$target, positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split$target, y_pred = naive_prediction)
+```
 
 
