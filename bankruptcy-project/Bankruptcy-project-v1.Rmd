@@ -1,0 +1,864 @@
+---
+title: "Bankruptcy project in R"
+output:
+  html_document:
+    df_print: paged
+---
+
+Clean workspace
+
+```{r}
+rm(list=ls(all=TRUE))
+setwd("C:\\Users\\samanoh\\training\\besantr\\bankruptcy-project")
+```
+
+Get Data and view summary
+
+```{r}
+data = read.csv("Bankruptcy_data.csv", header = TRUE)
+str(data)
+```
+
+COnvert target variable to categorical
+
+```{r}
+data$target = as.factor(as.character(data$target))
+data$ID = NULL
+str(data)
+```
+
+# Perform Random forest to find important attributes
+
+Check for missing values
+
+```{r}
+sum(is.na(data))
+```
+
+Perform Central imputation if missing values found
+
+```{r}
+library(DMwR)
+```
+
+```{r}
+ci_data = centralImputation(data = data)
+sum(is.na(ci_data))
+```
+
+Random forest
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+```{r}
+model = randomForest(target ~ ., data=ci_data, keep.forest=TRUE, do.trace=TRUE, ntrees=50)
+```
+
+Find importance from the model
+
+```{r}
+model$importance
+```
+
+Extract important attributes in data frame
+
+```{r}
+rf_imp_attr = data.frame(model$importance)
+rf_imp_attr = data.frame(row.names(rf_imp_attr), rf_imp_attr[,1])
+colnames(rf_imp_attr) = c("Attributes", "Importance")
+rf_imp_attr = rf_imp_attr[order(rf_imp_attr$Importance, decreasing = TRUE),]
+rf_imp_attr
+```
+
+Plot important attributes in graph
+
+```{r}
+varImpPlot(model)
+```
+
+# Select top 6 based on the importance
+
+```{r}
+imp_attr = as.character(rf_imp_attr$Attributes[1:6])
+imp_attr
+```
+
+Select important attributes from actual data and perform iterations
+
+```{r}
+imp_data = data[imp_attr]
+imp_data_full <- imp_data
+imp_data_full$target <- data$target
+str(imp_data_full)
+```
+
+# Perform outlier analysis - Box plot
+
+First Feature - original
+Attr27
+
+```{r}
+boxplot(imp_data_full$Attr27)$stats
+```
+
+First feature - outlied
+Attr27
+
+```{r}
+imp_data_full$Attr27 = ifelse(imp_data_full$Attr27 >= 70000, NA, imp_data_full$Attr27)
+imp_data_full$Attr27 = ifelse(imp_data_full$Attr27 <= -20000, NA, imp_data_full$Attr27)
+boxplot(imp_data_full$Attr27)$stats
+```
+
+Second Feature - original
+Attr34
+
+```{r}
+boxplot(imp_data_full$Attr34)$stats
+```
+
+Second feature - outlied
+Attr34
+
+```{r}
+imp_data_full$Attr34 = ifelse(imp_data_full$Attr34 >= 150, NA, imp_data_full$Attr34)
+imp_data_full$Attr34 = ifelse(imp_data_full$Attr34 <= -25, NA, imp_data_full$Attr34)
+boxplot(imp_data_full$Attr34)$stats
+```
+
+Third attribute - original
+Attr46
+
+```{r}
+boxplot(imp_data_full$Attr46)$stats
+```
+
+Third attribute - outlied
+Attr46
+
+```{r}
+imp_data_full$Attr46 = ifelse(imp_data_full$Attr46 >= 125, NA, imp_data_full$Attr46)
+imp_data_full$Attr46 = ifelse(imp_data_full$Attr46 <= -50, NA, imp_data_full$Attr46)
+boxplot(imp_data_full$Attr46)$stats
+```
+
+Fourth attribute - original
+Attr58
+
+```{r}
+boxplot(imp_data_full$Attr58)$stats
+```
+
+Fourth attribte - Outlied
+Attr58
+
+```{r}
+imp_data_full$Attr58 = ifelse(imp_data_full$Attr58 >= 5, NA, imp_data_full$Attr58)
+imp_data_full$Attr58 = ifelse(imp_data_full$Attr58 <= 0, NA, imp_data_full$Attr58)
+boxplot(imp_data_full$Attr58)$stats
+```
+
+Fifth Attribute - original
+Attr56
+
+```{r}
+boxplot(imp_data_full$Attr56)$stats
+```
+
+Fifth Attribute - outlied
+Attr56
+
+```{r}
+imp_data_full$Attr56 = ifelse(imp_data_full$Attr56 >= 1, NA, imp_data_full$Attr56)
+imp_data_full$Attr56 = ifelse(imp_data_full$Attr56 <= -4, NA, imp_data_full$Attr56)
+boxplot(imp_data_full$Attr56)$stats
+```
+
+Sixth Attribute - original
+Attr24
+
+```{r}
+boxplot(imp_data_full$Attr24)$stats
+```
+
+Sixth attribute - outlied
+Attr24
+
+```{r}
+imp_data_full$Attr24 = ifelse(imp_data_full$Attr24 >= 4.5, NA, imp_data_full$Attr24)
+imp_data_full$Attr24 = ifelse(imp_data_full$Attr24 <= -5, NA, imp_data_full$Attr24)
+boxplot(imp_data_full$Attr24)
+```
+
+# Missing value treatment - KNN imputation
+
+Check missing values
+
+```{r}
+sum(is.na(imp_data_full))
+```
+
+Import libraries
+
+```{r}
+library(DMwR)
+```
+
+
+Find Columns with more than 3 NA values and ignore (or select columns with <=3 null values)
+(KNN imputation can't be performed for rows having values less than 3)
+
+```{r}
+imp_data_no_na = imp_data_full[rowSums(is.na(imp_data_full)) <= 3,]
+str(imp_data_no_na)
+```
+
+# Train test split
+
+Split imputed data
+```{r}
+set.seed(88)
+trainrows = createDataPartition(y=imp_data_no_na$target, p=0.8, list = FALSE)
+train_split = imp_data_no_na[trainrows,]
+val_split = imp_data_no_na[-trainrows,]
+```
+
+Perform KNN imputation on train data
+
+```{r}
+train_split_0 = train_split[train_split$target==0,]
+train_split_1 = train_split[train_split$target==1,]
+
+train_split_0_knn = knnImputation(data = train_split_0, k=10)
+train_split_1_knn = knnImputation(data = train_split_1, k=10)
+
+sum(is.na(train_split_0_knn))
+sum(is.na(train_split_0_knn))
+
+# use distribution of target value 1 for val_split imputation since recall is the right metrics
+val_split_knn = knnImputation(data = val_split, k=10, distData = train_split_1_knn)
+sum(is.na(val_split_knn))
+
+# Combine imputed train data
+train_split_knn = rbind(train_split_0_knn, train_split_1_knn)
+```
+
+# Check variables where standard deviation is 0
+
+Ignore such values to avoid bias
+
+```{r}
+sd_train=apply(train_split_knn,2,sd)
+sort(sd_train,decreasing = TRUE)
+
+# no SD=0 values found
+```
+
+
+
+# Build Model - Logistic regression
+
+Build model with glm for logistic regression
+
+```{r}
+log_reg_model = glm(formula = target~., data = train_split_knn, family = binomial)
+```
+
+Predict the model from val_data
+
+```{r}
+log_reg_prediction = predict(log_reg_model, newdata=val_split_knn[-7], type="response")
+```
+
+View predicted output
+
+```{r}
+View(round(log_reg_prediction,3))
+```
+
+# Logistic regression Model - apply cutoff based on distribution
+
+Identify cutoff
+
+```{r}
+summary(train_split_knn$target)
+
+cutoff = 1411/27804
+cutoff
+```
+
+Apply cutoff on prediction
+
+```{r}
+log_reg_output = ifelse(log_reg_prediction >= cutoff, 1, 0)
+log_reg_output = as.factor(as.character(log_reg_output))
+summary(log_reg_output)
+View(log_reg_output)
+```
+
+# Metrics - Logistic regression without ROC
+
+Import library
+```{r}
+library("MLmetrics")
+```
+
+Plot Confusion matrix
+```{r}
+confusionMatrix(log_reg_output, val_split_knn$target)
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(log_reg_output, val_split_knn$target)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(log_reg_output, val_split_knn$target)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(log_reg_output, val_split_knn$target)
+```
+
+# Logistic regression Model - apply cutoff based on ROC
+
+Import library
+```{r}
+library("ROCR")
+```
+
+Calculate ROC
+
+```{r}
+rocr_pred = prediction(log_reg_prediction, val_split_knn$target)
+rocr_perf = performance(rocr_pred, "tpr", "fpr")
+plot(rocr_perf, colorize = TRUE)
+```
+
+Get ROC cutoff value
+
+
+```{r}
+#install.packages("Epi")
+library(Epi)
+```
+
+```{r}
+rc <- ROC(form = target~., data = val_split_knn, plot="sp") 
+```
+
+```{r}
+## optimal combination
+opt <- which.max(rowSums(rc$res[, c("sens", "spec")]))
+## optimal cut-off point 
+roc_cutoff = rc$res$lr.eta[opt]
+roc_cutoff
+```
+
+Plotting the ROC cutoff in graph
+
+```{r}
+ROC(form = target~., data = val_split_knn, plot = "ROC", MX = TRUE)
+```
+
+
+Apply ROC cutoff on prediction
+
+```{r}
+log_reg_output = ifelse(log_reg_prediction >= roc_cutoff, 1, 0)
+log_reg_output = as.factor(as.character(log_reg_output))
+summary(log_reg_output)
+```
+
+
+
+
+# Metrics - Logistic regression with ROC
+
+Import library
+```{r}
+library("MLmetrics")
+```
+
+Plot Confusion matrix
+```{r}
+confusionMatrix(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(log_reg_output, val_split$target)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(log_reg_output, val_split$target)
+```
+
+
+
+
+# Build Model - KNN
+
+Install libraries
+
+```{r}
+#install.packages("class")
+library("class")
+```
+
+Perform KNN classification
+
+```{r}
+knn_class_prediction = knn(train = train_split_knn[-7], test = val_split_knn[-7], cl = train_split_knn$target, k=7 )
+```
+
+
+# Metrics - KNN
+
+Finding accuracy
+
+```{r}
+#install.packages("gmodels")
+library("gmodels")
+```
+
+Using crosstable for confusion matrix
+
+```{r}
+CrossTable(x = val_split_knn$target, y = knn_class_prediction, prop.chisq = FALSE)
+```
+
+Calculate Accuracy
+
+```{r}
+(6910+47)/7303
+```
+
+Install MLmetrics
+
+```{r}
+library("MLmetrics")
+```
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = knn_class_prediction)
+```
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = knn_class_prediction)
+```
+
+Calculate categorical metrics - F1 score
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = knn_class_prediction)
+```
+
+
+# Build Model - Random Forest
+
+Build model
+
+Load Random forest library
+
+```{r}
+library(caret)
+library(randomForest)
+```
+
+```{r}
+rf_model = randomForest(target~., data=train_split_knn, keep.forest=TRUE, do.trace=TRUE, ntrees=50)
+```
+
+Predict validation data using random forest
+
+```{r}
+rf_prediction = predict(rf_model, val_split_knn[-7], type="response", norm.votes=TRUE)
+```
+
+
+# Metrics - Random Forest
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = rf_prediction, reference = val_split_knn$target,positive = "1")
+```
+
+Recall - Rf
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Precision - rf
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Sensitivity - Rf
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Specificity - Rf
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+F1 Score - Rf
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+
+# Random forest - Iteration 2
+
+```{r}
+rf_model = randomForest(target~., data=train_split_knn, keep.forest=TRUE, ntrees=500, cutoff=c(0.75,0.25))
+```
+
+Predict validation data using random forest
+
+```{r}
+rf_prediction = predict(rf_model, val_split_knn[-7], type="response", norm.votes=TRUE)
+```
+
+
+# Metrics - Random Forest - iteration 2
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = rf_prediction, reference = val_split_knn$target,positive = "1")
+```
+
+Recall - Rf
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Precision - rf
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Sensitivity - Rf
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Specificity - Rf
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+F1 Score - Rf
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+# Random forest - Iteration 3
+
+```{r}
+#install.packages("ROSE")
+library(ROSE)
+```
+
+
+```{r}
+
+#Due to lot of imbalance in the class , balanced it using ovun.sample function
+data_balanced_both <- ovun.sample(target ~ ., data = train_split_knn, method = "both", p=0.5, seed = 1)$data
+table(data_balanced_both$target)
+```
+
+```{r}
+rf_model = randomForest(target~., data=data_balanced_both, keep.forest=TRUE, ntrees=500)
+```
+
+Predict validation data using random forest
+
+```{r}
+rf_prediction = predict(rf_model, val_split_knn[-7], type="response", norm.votes=TRUE)
+```
+
+# Metrics - Random Forest - iteration 3
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = rf_prediction, reference = val_split_knn$target,positive = "1")
+```
+
+Recall - Rf
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Precision - rf
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Sensitivity - Rf
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+Specificity - Rf
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+F1 Score - Rf
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = rf_prediction)
+```
+
+
+# Build Model - CART
+
+Install libraries
+
+```{r}
+#install.packages("rpart")
+library(rpart)
+```
+
+Build CART model
+
+```{r}
+cart_model = rpart(train_split_knn$target~.,data = train_split_knn)
+summary(cart_model) 
+```
+
+
+Predict using CART
+
+```{r}
+cart_prediction = predict(cart_model, val_split_knn[-7], type = "class")
+```
+
+
+# Metrics - CART
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = cart_prediction, reference = val_split_knn$target,positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = cart_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = cart_prediction)
+```
+
+
+
+
+# Build Model - C5.0
+
+Install packages
+
+```{r}
+#install.packages("C50")
+library("C50")
+```
+
+
+Build model C5.0
+
+```{r}
+c50_model = C5.0(x = train_split_knn[-7], y = train_split_knn$target)
+summary(c50_model)
+```
+
+Predict model on validation data 
+
+```{r}
+c50_prediction = predict(c50_model, newdata=val_split_knn[-7])
+```
+
+
+
+
+# Metrics - C5.0
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = c50_prediction, reference = val_split_knn$target, positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = c50_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = c50_prediction)
+```
+
+
+# Build Model - Naive Bayes
+
+Install Libraries
+
+```{r}
+#install.packages("naivebayes")
+library("naivebayes")
+```
+
+Build model
+
+```{r}
+naive_model = naive_bayes(x = train_split_knn[-7], y = train_split_knn$target)
+summary(naive_model)
+```
+
+Predict model
+
+```{r}
+naive_prediction = predict(naive_model, newdata = val_split_knn[-7])
+summary(naive_prediction)
+```
+
+
+# Metrics - Naive Bayes
+
+
+Confusion Matrix
+
+```{r}
+confusionMatrix(data = naive_prediction, reference = val_split_knn$target, positive = "1")
+```
+
+
+Calculate categorical metrics - Recall
+
+```{r}
+Recall(y_true = val_split_knn$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - precision
+
+```{r}
+Precision(y_true = val_split_knn$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - sensitivity
+
+```{r}
+Sensitivity(y_true = val_split_knn$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - specificity
+
+```{r}
+Specificity(y_true = val_split_knn$target, y_pred = naive_prediction)
+```
+
+
+Calculate categorical metrics - F1 Score
+
+```{r}
+F1_Score(y_true = val_split_knn$target, y_pred = naive_prediction)
+```
+
+
